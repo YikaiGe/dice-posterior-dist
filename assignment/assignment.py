@@ -64,6 +64,15 @@ def oo_generate_sample(die_type_counts: Tuple[int],
 
     # PUT YOUR CODE HERE. Make sure to use the "roll" method from Die and to 
     # return a numpy nd.array.
+    # Create an array to store all the rolls
+    all_the_rolls = np.zeros((num_draws, rolls_per_draw), dtype=np.int64)
+    
+    for i, die_index in enumerate(die_types_drawn):
+        selected_die = dice[die_index]
+        rolls = selected_die.roll(rolls_per_draw, seed=None)
+        all_the_rolls[i] = rolls
+    
+    return all_the_rolls
 
 
 def safe_exponentiate(base: Union[int, float],
@@ -72,6 +81,9 @@ def safe_exponentiate(base: Union[int, float],
     for calculating likelihood in the dice example.
     """
     # YOUR CODE HERE
+    if base == 0 and exponent == 0:
+        return 1
+    return base ** exponent
 
 
 def dice_posterior(sample_draw: List[int], 
@@ -96,3 +108,28 @@ def dice_posterior(sample_draw: List[int],
                          faces. Its length must be equal to the number of faces \
                          on the dice.')
     # YOUR CODE HERE. You may want to use your safe_exponeniate.
+    total_dice = sum(die_type_counts)
+    prior_die_0 = die_type_counts[0] / total_dice
+    prior_die_1 = die_type_counts[1] / total_dice
+    
+    # Calculate likelihoods for each die type    
+    # For die 0 (type 1)
+    likelihood_die_0 = 1.0
+    for face_idx, count in enumerate(sample_draw):
+        face_prob = dice[0].face_probs[face_idx]
+        likelihood_die_0 *= safe_exponentiate(face_prob, count)
+    
+    # For die 1 (type 2)
+    likelihood_die_1 = 1.0
+    for face_idx, count in enumerate(sample_draw):
+        face_prob = dice[1].face_probs[face_idx]
+        likelihood_die_1 *= safe_exponentiate(face_prob, count)
+    
+    posterior_die_0_unnorm = likelihood_die_0 * prior_die_0
+    posterior_die_1_unnorm = likelihood_die_1 * prior_die_1
+    total_posterior = posterior_die_0_unnorm + posterior_die_1_unnorm
+    
+    if total_posterior == 0:
+        return prior_die_0
+    posterior_die_0 = posterior_die_0_unnorm / total_posterior
+    return posterior_die_0
